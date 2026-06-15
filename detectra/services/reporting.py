@@ -99,6 +99,10 @@ def _embed_plot(pdf: FPDF, plot_image_path: str | Path | None) -> None:
     pdf.cell(0, 10, "IR Spectrum Plot", 0, 1)
     pdf.ln(2)
 
+    if path.suffix.lower() == ".svg":
+        pdf.image(str(path), x=15, y=pdf.get_y(), w=180)
+        return
+
     with Image.open(path) as image:
         width, height = image.size
         pdf_width = 180

@@ -98,7 +98,7 @@ def register_routes(app) -> None:
                     dataframe,
                     "IR Spectrum Analysis",
                     result.get("detected_peaks", []),
-                    f"spectrum_{timestamp}.png",
+                    f"spectrum_{timestamp}.svg",
                 )
 
                 result.update({
@@ -155,8 +155,8 @@ def register_routes(app) -> None:
                 pure_dataframe = pd.read_csv(DATA_DIR / f"{drug}.csv")
 
                 timestamp = _timestamp()
-                mixture_filename = f"mixture_{timestamp}.png"
-                pure_filename = f"pure_{timestamp}.png"
+                mixture_filename = f"mixture_{timestamp}.svg"
+                pure_filename = f"pure_{timestamp}.svg"
                 mixture_plot_url, mixture_plot_path = _render_spectrum_plot(
                     app,
                     mixture_dataframe,
@@ -363,7 +363,7 @@ def _analyze_multiple_compounds(
         )
 
     timestamp = _timestamp()
-    plot_filename = f"multi_{timestamp}.png"
+    plot_filename = f"multi_{timestamp}.svg"
     if serverless:
         plot_url = create_overlaid_plot(spectra_data)
         plot_path = None

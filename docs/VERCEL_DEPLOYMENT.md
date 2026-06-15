@@ -171,9 +171,9 @@ When training changes:
 
 ### Function bundle is too large
 
-The Vercel-compatible stack excludes CatBoost. Its pinned Linux wheels measure
-about 336.1 MiB uncompressed before source files, below Vercel's 500 MB
-function limit.
+The Vercel-compatible stack excludes CatBoost and Matplotlib. Spectrum plots
+are rendered as lightweight SVG, keeping the compiled dependency bundle below
+Vercel's extended Python function limit.
 Confirm that `.vercelignore` is present. If the final deployment still exceeds
 your plan's limit, use a separate ML backend on Render, Railway, Fly.io, or a
 VM.

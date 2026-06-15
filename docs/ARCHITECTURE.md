@@ -8,7 +8,7 @@ under `detectra.services`:
 
 - `validation`: uploaded CSV validation
 - `model_artifacts`: model inventory and first-run status
-- `plotting`: Matplotlib spectrum rendering
+- `plotting`: lightweight SVG spectrum rendering
 - `reporting`: PDF composition
 - `runtime_files`: generated-file cleanup
 
