@@ -1,10 +1,7 @@
-"""PDF report generation for completed analyses."""
+"""Dependency-free PDF report generation for completed analyses."""
 
 from datetime import datetime
 from pathlib import Path
-
-from fpdf import FPDF
-from PIL import Image
 
 
 def generate_pdf_report(
@@ -14,102 +11,120 @@ def generate_pdf_report(
     filename: str | None = None,
     plot_image_path: str | Path | None = None,
 ) -> Path:
-    """Generate a PDF report and return its filesystem path."""
+    """Generate a compact text PDF report and return its filesystem path."""
+    del plot_image_path
     if not filename:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"detectra_report_{report_type}_{timestamp}.pdf"
 
     filepath = Path(reports_folder) / filename
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Detectra IR Spectrum Analysis Report", 0, 1, "C")
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, f"Report Type: {report_type.title()} Compound Analysis", 0, 1)
-    pdf.cell(0, 10, f"Generated: {datetime.now():%Y-%m-%d %H:%M:%S}", 0, 1)
-    pdf.ln(5)
-
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, "Analysis Results", 0, 1)
-    pdf.set_font("Arial", "", 12)
-    _write_result_summary(pdf, result_data, report_type)
-    _write_detected_peaks(pdf, result_data)
-    _embed_plot(pdf, plot_image_path)
-
-    pdf.output(str(filepath))
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "Detectra IR Spectrum Analysis Report",
+        "",
+        f"Report Type: {report_type.title()} Compound Analysis",
+        f"Generated: {datetime.now():%Y-%m-%d %H:%M:%S}",
+        "",
+        "Analysis Results",
+        *_result_summary(result_data, report_type),
+    ]
+    lines.extend(_detected_peaks(result_data))
+    filepath.write_bytes(_build_pdf(lines))
     return filepath
 
 
-def _write_result_summary(pdf: FPDF, result_data: dict, report_type: str) -> None:
+def _result_summary(result_data: dict, report_type: str) -> list[str]:
     if report_type == "pure":
         if result_data.get("is_drug"):
-            drug = result_data.get("drug_type", "Unknown").title()
-            pdf.cell(0, 10, f"Drug Detected: {drug}", 0, 1)
-            pdf.cell(
-                0,
-                10,
+            return [
+                f'Drug Detected: {result_data.get("drug_type", "Unknown").title()}',
                 f'Confidence: {result_data.get("confidence", 0) * 100:.1f}%',
-                0,
-                1,
-            )
-        else:
-            pdf.cell(0, 10, "No drug compound detected", 0, 1)
-            pdf.cell(
-                0,
-                10,
-                f'Drug Probability: {result_data.get("probability", 0) * 100:.1f}%',
-                0,
-                1,
-            )
-    elif report_type == "mixture":
-        dominant = result_data.get("dominant_compound", "None")
-        matching = result_data.get("peak_matching_percentage", 0)
-        pdf.cell(0, 10, f"Dominant Compound: {dominant}", 0, 1)
-        pdf.cell(0, 10, f"Peak Matching: {matching:.1f}%", 0, 1)
-    elif report_type == "multiple":
+            ]
+        return [
+            "No drug compound detected",
+            f'Drug Probability: {result_data.get("probability", 0) * 100:.1f}%',
+        ]
+
+    if report_type == "mixture":
+        return [
+            f'Dominant Compound: {result_data.get("dominant_compound", "None")}',
+            (
+                "Peak Matching: "
+                f'{result_data.get("peak_matching_percentage", 0):.1f}%'
+            ),
+        ]
+
+    if report_type == "multiple":
         detected = result_data.get("detected_drugs", [])
         summary = ", ".join(detected) if detected else "No drug compounds detected"
-        pdf.cell(0, 10, f"Detected Drugs: {summary}", 0, 1)
+        return [f"Detected Drugs: {summary}"]
+
+    return ["No report summary is available."]
 
 
-def _write_detected_peaks(pdf: FPDF, result_data: dict) -> None:
-    if "detected_peaks" not in result_data:
-        return
+def _detected_peaks(result_data: dict) -> list[str]:
+    peaks = result_data.get("detected_peaks", [])
+    if not peaks:
+        return []
+    return [
+        "",
+        "Detected Peaks (cm^-1)",
+        *(f"{index}. {peak:.1f} cm^-1" for index, peak in enumerate(peaks[:10], 1)),
+    ]
 
-    pdf.ln(5)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Detected Peaks (cm^-1)", 0, 1)
-    pdf.set_font("Arial", "", 10)
-    for index, peak in enumerate(result_data["detected_peaks"][:10], 1):
-        pdf.cell(0, 8, f"{index}. {peak:.1f} cm^-1", 0, 1)
+
+def _pdf_text(value: str) -> str:
+    ascii_value = value.encode("ascii", errors="replace").decode("ascii")
+    return ascii_value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def _embed_plot(pdf: FPDF, plot_image_path: str | Path | None) -> None:
-    if not plot_image_path:
-        return
+def _build_pdf(lines: list[str]) -> bytes:
+    content_lines = ["BT", "/F1 16 Tf", "50 790 Td"]
+    for index, line in enumerate(lines):
+        if index:
+            content_lines.append("0 -22 Td")
+        if index == 5:
+            content_lines.append("/F1 14 Tf")
+        elif index == 6:
+            content_lines.append("/F1 11 Tf")
+        content_lines.append(f"({_pdf_text(line)}) Tj")
+    content_lines.append("ET")
+    stream = "\n".join(content_lines).encode("ascii")
 
-    path = Path(plot_image_path)
-    if not path.is_file():
-        return
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        (
+            b"<< /Type /Page /Parent 2 0 R "
+            b"/MediaBox [0 0 612 842] "
+            b"/Resources << /Font << /F1 4 0 R >> >> "
+            b"/Contents 5 0 R >>"
+        ),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        (
+            f"<< /Length {len(stream)} >>\nstream\n".encode("ascii")
+            + stream
+            + b"\nendstream"
+        ),
+    ]
 
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, "IR Spectrum Plot", 0, 1)
-    pdf.ln(2)
+    output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for number, object_data in enumerate(objects, 1):
+        offsets.append(len(output))
+        output.extend(f"{number} 0 obj\n".encode("ascii"))
+        output.extend(object_data)
+        output.extend(b"\nendobj\n")
 
-    if path.suffix.lower() == ".svg":
-        pdf.image(str(path), x=15, y=pdf.get_y(), w=180)
-        return
-
-    with Image.open(path) as image:
-        width, height = image.size
-        pdf_width = 180
-        pdf_height = pdf_width * height / width
-        if pdf_height > pdf.h - pdf.get_y() - 20:
-            pdf.add_page()
-            pdf.set_font("Arial", "B", 14)
-            pdf.cell(0, 10, "IR Spectrum Plot (Continued)", 0, 1)
-            pdf.ln(2)
-        pdf.image(str(path), x=15, y=pdf.get_y(), w=pdf_width)
+    xref_offset = len(output)
+    output.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    output.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    output.extend(
+        (
+            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_offset}\n%%EOF\n"
+        ).encode("ascii")
+    )
+    return bytes(output)

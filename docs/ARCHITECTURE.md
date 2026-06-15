@@ -9,7 +9,7 @@ under `detectra.services`:
 - `validation`: uploaded CSV validation
 - `model_artifacts`: model inventory and first-run status
 - `plotting`: lightweight SVG spectrum rendering
-- `reporting`: PDF composition
+- `reporting`: dependency-free PDF composition
 - `runtime_files`: generated-file cleanup
 
 Runtime files are written under `instance/` and are excluded from Git.

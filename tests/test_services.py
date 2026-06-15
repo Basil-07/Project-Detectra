@@ -7,6 +7,7 @@ import zipfile
 import pandas as pd
 
 from detectra.services import model_artifacts
+from detectra.services.reporting import generate_pdf_report
 from detectra.services.validation import allowed_file, validate_csv_format
 
 
@@ -79,3 +80,16 @@ def test_ensure_model_files_downloads_and_verifies_archive(
     model_artifacts.ensure_model_files(("required.pkl",))
 
     assert (destination / "required.pkl").read_bytes() == b"model"
+
+
+def test_generate_pdf_report_creates_valid_pdf_markers(tmp_path):
+    report = generate_pdf_report(
+        {"is_drug": True, "drug_type": "cocaine", "confidence": 0.91},
+        tmp_path,
+    )
+
+    content = report.read_bytes()
+
+    assert content.startswith(b"%PDF-1.4")
+    assert content.rstrip().endswith(b"%%EOF")
+    assert b"Drug Detected: Cocaine" in content
