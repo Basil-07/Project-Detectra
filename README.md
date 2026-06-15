@@ -132,7 +132,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the processing flow and
 
 ## Vercel Deployment
 
-Detectra includes a Vercel serverless entry point and downloads trained models
+Detectra supports Vercel's native Flask runtime and downloads trained models
 from a GitHub Release rather than committing `.pkl` files. Follow
 [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) for the complete
 deployment procedure.

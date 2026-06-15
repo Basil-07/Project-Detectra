@@ -97,8 +97,8 @@ Do not add the archive or `.pkl` files to the Git repository.
 
 The repository already contains:
 
-- `api/index.py` as the serverless Flask entry point
-- `vercel.json` for routing and function duration
+- `app.py` as the native Flask entry point detected by Vercel
+- `vercel.json` for Vercel configuration validation
 - `.vercelignore` to reduce the deployment bundle
 - `public/static/` for CSS and the logo
 
