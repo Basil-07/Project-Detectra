@@ -38,7 +38,7 @@ mixture.
 ## Multi-Compound Analysis
 
 `detectra.analysis.multi` interpolates each reference spectrum onto a common
-900-point axis. Selected spectra are averaged and passed through six classifier
+900-point axis. Selected spectra are averaged and passed through five classifier
 chains. Majority voting produces the final multi-label drug prediction.
 
 ## Training
@@ -52,5 +52,6 @@ must not be presented as independent real-world validation.
 
 - `data/reference_spectra/`: version-controlled scientific inputs
 - `models/`: ignored, locally trained model artifacts
-- `detectra/static/`: version-controlled frontend assets
+- `public/static/`: version-controlled frontend assets served by Flask locally
+  and Vercel's CDN in production
 - `instance/`: ignored runtime and evaluation output

@@ -10,13 +10,11 @@ import numpy as np
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from detectra.analysis.multi import COMMON_AXIS
 
 
 plt.style.use("seaborn-v0_8")
-sns.set_palette("husl")
 
 PLOT_COLORS = ("#2569ad", "#d14f5b", "#258f72", "#d9822b", "#7656b4", "#8a6642")
 

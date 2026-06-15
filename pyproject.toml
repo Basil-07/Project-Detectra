@@ -7,7 +7,7 @@ name = "detectra"
 version = "0.1.0"
 description = "Machine-learning-assisted infrared spectrum analysis."
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.12,<3.13"
 dynamic = ["dependencies"]
 
 [tool.setuptools.dynamic]
@@ -17,7 +17,7 @@ dependencies = {file = ["requirements.txt"]}
 include = ["detectra*"]
 
 [tool.setuptools.package-data]
-detectra = ["templates/*.html", "static/*.css", "static/*.png"]
+detectra = ["templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

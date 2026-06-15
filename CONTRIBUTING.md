@@ -2,7 +2,7 @@
 
 ## Development Workflow
 
-1. Create and activate a Python 3.11 virtual environment.
+1. Create and activate a Python 3.12 virtual environment.
 2. Install `requirements-dev.txt`.
 3. Create a focused branch for the change.
 4. Keep analysis logic out of Flask route handlers when adding new behavior.

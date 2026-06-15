@@ -7,7 +7,7 @@ analysis features can be used.
 ## 1. Prerequisites
 
 - Git
-- Python 3.11
+- Python 3.12
 - At least several gigabytes of free memory
 - A few minutes for dependency installation and model training
 
@@ -17,7 +17,7 @@ Confirm the Python version:
 python --version
 ```
 
-It should report Python 3.11.x. On Windows, `py -3.11 --version` may be more
+It should report Python 3.12.x. On Windows, `py -3.12 --version` may be more
 reliable.
 
 ## 2. Clone the Repository
@@ -34,7 +34,7 @@ Replace `<repository-url>` with the GitHub clone URL.
 ### Windows PowerShell
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -48,7 +48,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ### macOS or Linux
 
 ```bash
-python3.11 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 

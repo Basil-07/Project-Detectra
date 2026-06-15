@@ -24,7 +24,6 @@ detectra/
   services/          Validation, plotting, reporting, and model inventory
   training/          Offline model-training commands
   templates/         Flask/Jinja pages
-  static/            Version-controlled frontend assets
   config.py          Application configuration
   paths.py           Canonical project paths
   routes.py          Flask routes and request orchestration
@@ -36,11 +35,12 @@ tests/                Automated smoke tests and model evaluation utilities
 docs/                 Architecture and development documentation
 instance/             Ignored uploads, reports, plots, and local outputs
 app.py                Local development entry point
+public/static/         Vercel and Flask frontend assets
 ```
 
 ## Requirements
 
-- Python 3.11
+- Python 3.12
 - A virtual environment is strongly recommended
 
 Model artifacts are intentionally not committed to Git. A fresh clone must
@@ -50,7 +50,7 @@ analysis.
 ## Setup
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
@@ -130,3 +130,9 @@ combined command is the supported first-run workflow.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the processing flow and
 [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions.
 
+## Vercel Deployment
+
+Detectra includes a Vercel serverless entry point and downloads trained models
+from a GitHub Release rather than committing `.pkl` files. Follow
+[docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) for the complete
+deployment procedure.

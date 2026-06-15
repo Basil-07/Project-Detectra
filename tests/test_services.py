@@ -1,6 +1,8 @@
 """Focused tests for web-independent service helpers."""
 
+import hashlib
 from pathlib import Path
+import zipfile
 
 import pandas as pd
 
@@ -50,3 +52,30 @@ def test_missing_model_files_uses_configured_models_directory(
     )
 
     assert missing == ["missing.pkl"]
+
+
+def test_ensure_model_files_downloads_and_verifies_archive(
+    tmp_path,
+    monkeypatch,
+):
+    source_directory = tmp_path / "source"
+    source_directory.mkdir()
+    archive_path = source_directory / "models.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("required.pkl", b"model")
+
+    checksum = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+    destination = tmp_path / "runtime-models"
+    monkeypatch.setattr(model_artifacts, "MODELS_DIR", destination)
+    monkeypatch.setenv(
+        model_artifacts.MODEL_ARCHIVE_URL_VARIABLE,
+        archive_path.resolve().as_uri(),
+    )
+    monkeypatch.setenv(
+        model_artifacts.MODEL_ARCHIVE_SHA_VARIABLE,
+        checksum,
+    )
+
+    model_artifacts.ensure_model_files(("required.pkl",))
+
+    assert (destination / "required.pkl").read_bytes() == b"model"

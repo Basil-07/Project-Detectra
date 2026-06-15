@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+docs
+tests
+instance
+models
+detectra/training
+CONTRIBUTING.md
+requirements-dev.txt

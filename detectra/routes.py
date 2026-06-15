@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from flask import (
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -35,7 +36,8 @@ from detectra.services.model_artifacts import (
     MULTI_MODEL_FILES,
     PURE_MODEL_FILES,
     TRAINING_COMMAND,
-    missing_model_files,
+    ensure_model_files,
+    models_can_be_prepared,
 )
 from detectra.services.plotting import create_overlaid_plot, create_spectrum_plot
 from detectra.services.reporting import generate_pdf_report
@@ -49,6 +51,15 @@ def register_routes(app) -> None:
     def home():
         return render_template("home.html")
 
+    @app.route("/health")
+    def health():
+        return jsonify({
+            "status": "ok",
+            "serverless": app.config["SERVERLESS"],
+            "pure_models_available": models_can_be_prepared(PURE_MODEL_FILES),
+            "multi_models_available": models_can_be_prepared(MULTI_MODEL_FILES),
+        })
+
     @app.route("/plots/<path:filename>")
     def generated_plot(filename):
         return send_from_directory(app.config["PLOTS_FOLDER"], filename)
@@ -56,9 +67,10 @@ def register_routes(app) -> None:
     @app.route("/upload", methods=["GET", "POST"])
     def upload():
         if request.method == "POST":
-            missing_models = missing_model_files(PURE_MODEL_FILES)
-            if missing_models:
-                _flash_training_required("Pure-analysis")
+            try:
+                ensure_model_files(PURE_MODEL_FILES)
+            except Exception as exc:
+                flash(f"Unable to prepare pure-analysis models: {exc}", "error")
                 return redirect(request.url)
 
             upload_file = request.files.get("file")
@@ -81,28 +93,24 @@ def register_routes(app) -> None:
 
                 result = _predict_pure_sample(filepath)
                 dataframe = pd.read_csv(filepath)
-                plot_filename = f"spectrum_{timestamp}.png"
-                plot_path = Path(app.config["PLOTS_FOLDER"]) / plot_filename
-                create_spectrum_plot(
+                plot_url, plot_path = _render_spectrum_plot(
+                    app,
                     dataframe,
                     "IR Spectrum Analysis",
                     result.get("detected_peaks", []),
-                    plot_path,
+                    f"spectrum_{timestamp}.png",
                 )
 
                 result.update({
-                    "spectrum_plot": url_for(
-                        "generated_plot",
-                        filename=plot_filename,
-                    ),
-                    "_plot_path": str(plot_path),
+                    "spectrum_plot": plot_url,
+                    "_plot_path": plot_path,
                     "sample_name": request.form.get(
                         "sample_name",
                         "Unknown Sample",
                     ),
                     "notes": request.form.get("notes", ""),
                 })
-                session["last_pure_analysis_result"] = result
+                session["last_pure_analysis_result"] = _session_result(result)
                 return render_template("output.html", result=result)
             except Exception as exc:
                 flash(f"Error processing file: {exc}", "error")
@@ -112,7 +120,7 @@ def register_routes(app) -> None:
 
         return render_template(
             "upload.html",
-            models_ready=not missing_model_files(PURE_MODEL_FILES),
+            models_ready=models_can_be_prepared(PURE_MODEL_FILES),
             training_command=TRAINING_COMMAND,
         )
 
@@ -149,20 +157,19 @@ def register_routes(app) -> None:
                 timestamp = _timestamp()
                 mixture_filename = f"mixture_{timestamp}.png"
                 pure_filename = f"pure_{timestamp}.png"
-                mixture_plot_path = (
-                    Path(app.config["PLOTS_FOLDER"]) / mixture_filename
-                )
-                pure_plot_path = Path(app.config["PLOTS_FOLDER"]) / pure_filename
-
-                create_spectrum_plot(
+                mixture_plot_url, mixture_plot_path = _render_spectrum_plot(
+                    app,
                     mixture_dataframe,
                     f"{drug.title()} Mixture Spectrum",
-                    save_path=mixture_plot_path,
+                    None,
+                    mixture_filename,
                 )
-                create_spectrum_plot(
+                pure_plot_url, _pure_plot_path = _render_spectrum_plot(
+                    app,
                     pure_dataframe,
                     f"Pure {drug.title()} Reference",
-                    save_path=pure_plot_path,
+                    None,
+                    pure_filename,
                 )
 
                 results = {
@@ -170,15 +177,9 @@ def register_routes(app) -> None:
                         drug if matching_percentage > 50 else None
                     ),
                     "peak_matching_percentage": matching_percentage,
-                    "mixture_spectrum_plot": url_for(
-                        "generated_plot",
-                        filename=mixture_filename,
-                    ),
-                    "pure_spectrum_plot": url_for(
-                        "generated_plot",
-                        filename=pure_filename,
-                    ),
-                    "_plot_path": str(mixture_plot_path),
+                    "mixture_spectrum_plot": mixture_plot_url,
+                    "pure_spectrum_plot": pure_plot_url,
+                    "_plot_path": mixture_plot_path,
                     "peak_comparison": [
                         {
                             "expected": peak[0],
@@ -205,7 +206,9 @@ def register_routes(app) -> None:
                     "cutting_percentage": cutting_percentage,
                     "notes": notes,
                 }
-                session["last_mixture_analysis_results"] = results
+                session["last_mixture_analysis_results"] = _session_result(
+                    results
+                )
                 return render_template(
                     "mixture_output.html",
                     results=results,
@@ -220,9 +223,10 @@ def register_routes(app) -> None:
     @app.route("/multiple", methods=["GET", "POST"])
     def multiple():
         if request.method == "POST":
-            missing_models = missing_model_files(MULTI_MODEL_FILES)
-            if missing_models:
-                _flash_training_required("Multi-compound")
+            try:
+                ensure_model_files(MULTI_MODEL_FILES)
+            except Exception as exc:
+                flash(f"Unable to prepare multi-compound models: {exc}", "error")
                 return redirect(request.url)
 
             selected_drugs = request.form.getlist("drugs")
@@ -239,8 +243,9 @@ def register_routes(app) -> None:
                 results = _analyze_multiple_compounds(
                     selected_drugs + selected_non_drugs,
                     app.config["PLOTS_FOLDER"],
+                    app.config["SERVERLESS"],
                 )
-                session["last_multi_analysis_results"] = results
+                session["last_multi_analysis_results"] = _session_result(results)
                 return render_template(
                     "multi_output.html",
                     results=results,
@@ -256,7 +261,7 @@ def register_routes(app) -> None:
 
         return render_template(
             "multiple.html",
-            models_ready=not missing_model_files(MULTI_MODEL_FILES),
+            models_ready=models_can_be_prepared(MULTI_MODEL_FILES),
             training_command=TRAINING_COMMAND,
         )
 
@@ -327,6 +332,7 @@ def _validate_compound_selection(
 def _analyze_multiple_compounds(
     selected_compounds: list[str],
     plots_folder: str,
+    serverless: bool,
 ) -> dict:
     chains = joblib.load(MODELS_DIR / "ensemble_classifier_chains.pkl")
     label_binarizer = joblib.load(
@@ -358,14 +364,19 @@ def _analyze_multiple_compounds(
 
     timestamp = _timestamp()
     plot_filename = f"multi_{timestamp}.png"
-    plot_path = Path(plots_folder) / plot_filename
-    create_overlaid_plot(spectra_data, plot_path)
+    if serverless:
+        plot_url = create_overlaid_plot(spectra_data)
+        plot_path = None
+    else:
+        plot_path_object = Path(plots_folder) / plot_filename
+        create_overlaid_plot(spectra_data, plot_path_object)
+        plot_url = url_for("generated_plot", filename=plot_filename)
+        plot_path = str(plot_path_object)
 
     model_names = (
         "XGBoost",
         "Extra Trees",
         "Ridge",
-        "CatBoost",
         "Support Vector Classifier",
         "AdaBoost",
     )
@@ -386,11 +397,8 @@ def _analyze_multiple_compounds(
 
     return {
         "detected_drugs": detected_drugs,
-        "overlaid_spectrum_plot": url_for(
-            "generated_plot",
-            filename=plot_filename,
-        ),
-        "_plot_path": str(plot_path),
+        "overlaid_spectrum_plot": plot_url,
+        "_plot_path": plot_path,
         "prediction_confidence": {
             drug: float(
                 vote_fraction[list(label_binarizer.classes_).index(drug)] * 100
@@ -432,12 +440,33 @@ def _download_report(app, session_key, report_type, missing_message):
         return redirect(url_for("home"))
 
 
-def _flash_training_required(analysis_name: str) -> None:
-    flash(
-        f"{analysis_name} models are not trained. Run "
-        f"`{TRAINING_COMMAND}` from the repository root.",
-        "error",
-    )
+def _render_spectrum_plot(
+    app,
+    dataframe,
+    title: str,
+    peaks,
+    filename: str,
+) -> tuple[str, str | None]:
+    if app.config["SERVERLESS"]:
+        return create_spectrum_plot(dataframe, title, peaks), None
+
+    plot_path = Path(app.config["PLOTS_FOLDER"]) / filename
+    create_spectrum_plot(dataframe, title, peaks, plot_path)
+    return url_for("generated_plot", filename=filename), str(plot_path)
+
+
+def _session_result(result: dict) -> dict:
+    """Remove large or instance-local plot data before cookie serialization."""
+    return {
+        key: value
+        for key, value in result.items()
+        if key not in {
+            "spectrum_plot",
+            "mixture_spectrum_plot",
+            "pure_spectrum_plot",
+            "overlaid_spectrum_plot",
+        }
+    }
 
 
 def _timestamp() -> str:

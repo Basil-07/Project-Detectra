@@ -16,7 +16,7 @@ def client():
 
 @pytest.mark.parametrize(
     "path",
-    ["/", "/upload", "/mixture", "/multiple"],
+    ["/", "/health", "/upload", "/mixture", "/multiple"],
 )
 def test_pages_render(client, path):
     response = client.get(path)

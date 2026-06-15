@@ -20,7 +20,6 @@ env/
 # Runtime-generated files
 instance/*
 !instance/.gitkeep
-detectra/static/plots/
 catboost_info/
 
 # Locally trained model artifacts
@@ -36,3 +35,4 @@ Thumbs.db
 # Build artifacts
 build/
 dist/
+.vercel/

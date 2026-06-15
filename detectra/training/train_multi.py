@@ -9,7 +9,6 @@ from sklearn.ensemble import ExtraTreesClassifier, AdaBoostClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
-from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
@@ -113,10 +112,6 @@ def train_multi_models():
             min_samples_split=5, random_state=42
         ),
         "ridge": RidgeClassifier(alpha=1.0, solver="sag"),
-        "catboost": CatBoostClassifier(
-            iterations=300, learning_rate=0.1, depth=6,
-            l2_leaf_reg=3, thread_count=-1, verbose=0
-        ),
         "svc": SVC(C=1.0, kernel="rbf", probability=True, gamma="scale"),
         "adaboost": AdaBoostClassifier(
             n_estimators=150, learning_rate=0.8, random_state=42
