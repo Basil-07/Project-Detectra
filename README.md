@@ -140,11 +140,11 @@ deployment procedure.
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/home.png" alt="Home Page" width="45%">
-  <img src="screenshots/analysis.png" alt="Analysis Page" width="45%">
+  <img src="screenshots/Landing Page.png" alt="Home Page" width="45%">
+  <img src="screenshots/Pure Compound Page.png" alt="Analysis Page" width="45%">
 </p>
 
 <p align="center">
-  <img src="screenshots/mixture.png" alt="Mixture Analysis" width="45%">
-  <img src="screenshots/report.png" alt="PDF Report" width="45%">
+  <img src="screenshots/Result Page.png" alt="Mixture Analysis" width="45%">
+  <img src="screenshots/Result Page.png" alt="PDF Report" width="45%">
 </p>
