@@ -136,3 +136,15 @@ Detectra supports Vercel's native Flask runtime and downloads trained models
 from a GitHub Release rather than committing `.pkl` files. Follow
 [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) for the complete
 deployment procedure.
+
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/home.png" alt="Home Page" width="45%">
+  <img src="screenshots/analysis.png" alt="Analysis Page" width="45%">
+</p>
+
+<p align="center">
+  <img src="screenshots/mixture.png" alt="Mixture Analysis" width="45%">
+  <img src="screenshots/report.png" alt="PDF Report" width="45%">
+</p>
