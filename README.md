@@ -145,6 +145,6 @@ deployment procedure.
 </p>
 
 <p align="center">
-  <img src="screenshots/Result Page.png" alt="Mixture Analysis" width="45%">
-  <img src="screenshots/Result Page.png" alt="PDF Report" width="45%">
+  <img src="screenshots/Result Page 1.png" alt="Mixture Analysis" width="45%">
+  <img src="screenshots/Result Page 2.png" alt="PDF Report" width="45%">
 </p>
